@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FXエントリー基準チェック</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1a1d21;--sub:#6b7280;--line:#e5e7eb;--up:#16a34a;--down:#dc2626;--accent:#2563eb;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111418;--card:#1b1f25;--text:#eef0f3;--sub:#9aa3af;--line:#2c323b;--up:#4ade80;--down:#f87171;--accent:#60a5fa;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111418;--card:#1b1f25;--text:#eef0f3;--sub:#9aa3af;--line:#2c323b;--up:#4ade80;--down:#f87171;--accent:#60a5fa;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif;line-height:1.5}
+main{max-width:680px;margin:0 auto;padding:16px}
+h1{font-size:18px;margin:0 0 12px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{flex:1;background:var(--card);color:var(--sub);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-weight:700;cursor:pointer}
+.tab.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:12px;color:var(--sub)}
+input,select,textarea{width:100%;font:inherit;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+textarea{height:80px;font-size:12px;font-family:monospace}
+button.main{width:100%;margin-top:12px;font:inherit;font-weight:700;color:#fff;background:var(--accent);border:0;border-radius:10px;padding:12px;cursor:pointer}
+button.main:disabled{opacity:.5}
+button.ghost{font:inherit;font-size:12px;color:var(--accent);background:transparent;border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}
+.sub{color:var(--sub);font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin:8px 0}
+.stats b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.down{color:var(--down)}
+canvas{width:100%;height:150px;display:block}
+.verdict{border-left:4px solid var(--accent);padding:6px 10px;margin:8px 0;font-size:14px}
+.post img{width:100%;border-radius:8px;display:block;margin-top:8px}
+.hide{display:none}
+.rrow,.hrow{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:14px;flex-wrap:wrap}
+.tag{font-size:11px;padding:1px 6px;border-radius:6px;border:1px solid var(--line);color:var(--sub)}.tag.req{color:var(--down);border-color:var(--down)}
+.ck{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:15px;color:var(--text)}
+.ck input,.inl{width:22px;height:22px;padding:0;flex:none}
+.warn{border-left:4px solid var(--down);padding:6px 10px;margin:10px 0;font-size:14px}
+.good{border-left:4px solid var(--up);padding:6px 10px;margin:10px 0;font-size:14px}
+.pips{width:90px}
+.crow{display:flex;gap:4px;margin:6px 0;flex-wrap:wrap}.crow select,.crow input{width:auto;flex:1 1 90px}
+.chk{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>FXエントリー基準チェック</h1>
+<div class="tabs"><button class="tab on" data-t="rule">基準チェック</button><button class="tab" data-t="share">みんなの投稿</button></div>
+
+<section id="rule">
+ <div class="card">
+  <strong>① エントリー基準(自分で書く)</strong>
+  <p class="sub">自分のルールを1行ずつ書いて追加します。「必須」の基準は、1つでも欠けると逸脱として記録されます。</p>
+  <div style="display:flex;gap:8px;margin-top:8px"><input id="rtext" maxlength="80" placeholder="例: 4時間足で200MAの上にいる"><button class="ghost" id="radd">追加</button></div>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="rreq" checked class="inl"> 必須の基準にする</label>
+  <div id="rules"></div>
+ </div>
+ <div class="card">
+  <strong>② エントリー前チェック</strong>
+  <div class="grid" style="margin-top:8px"><div><label>通貨ペア</label><input id="pair" value="USDJPY"></div><div><label>売買</label><select id="side"><option>買い</option><option>売り</option></select></div></div>
+  <div id="chklist" style="margin-top:8px"></div>
+  <label style="margin-top:8px">メモ(任意)</label><input id="memo" maxlength="80">
+  <div id="verdict"></div>
+  <button class="main" id="rec">この内容で記録する</button>
+ </div>
+ <div class="card">
+  <strong>③ 記録と振り返り</strong>
+  <div id="sum"></div>
+  <div id="hist"></div>
+  <button class="ghost" id="clear" style="margin-top:10px">全記録を消す</button>
+  <p class="sub">記録と基準は、このスマホのブラウザ内に保存されます。友達とは共有されません。</p>
+ </div>
+</section>
+
+<section id="share" class="hide">
+ <div class="card">
+  <strong>写真を投稿</strong>
+  <label style="margin-top:8px">合言葉(友達と同じ言葉にする)</label><input id="room" maxlength="30" placeholder="例: fx-friends-2026">
+  <label style="margin-top:8px">ニックネーム</label><input id="nick" maxlength="20">
+  <label style="margin-top:8px">題名</label><input id="title" maxlength="60" placeholder="例: 今日のドル円の結果">
+  <label style="margin-top:8px">写真</label><input type="file" id="photo" accept="image/*">
+  <button class="main" id="post">投稿する</button>
+  <div class="sub" id="pmsg" style="margin-top:6px"></div>
+ </div>
+ <div id="posts"></div>
+</section>
+</main>
+<script src="config.js"></script>
+
+<script>
+const $=id=>document.getElementById(id);
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));
+  $("rule").classList.toggle("hide",b.dataset.t!=="rule");
+  $("share").classList.toggle("hide",b.dataset.t!=="share");
+});
+
+/* ---------- ① エントリー基準チェック ---------- */
+const st={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let RULES=st.get("fxrules",[]),LOG=st.get("fxlog",[]),ticks={};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const saveR=()=>st.set("fxrules",RULES),saveL=()=>st.set("fxlog",LOG);
+
+function renderRules(){
+  $("rules").innerHTML=RULES.length?RULES.map((r,i)=>`<div class="rrow"><span>${esc(r.text)} <b class="tag ${r.req?"req":""}">${r.req?"必須":"任意"}</b></span><span><button class="ghost" data-a="tog" data-i="${i}">必須/任意</button> <button class="ghost" data-a="edit" data-i="${i}">編集</button> <button class="ghost" data-a="del" data-i="${i}">削除</button></span></div>`).join(""):'<div class="sub" style="margin-top:8px">まだ基準がありません。上の欄に書いて追加してください。</div>';
+  renderCheck();
+}
+$("radd").onclick=()=>{
+  const t=$("rtext").value.trim();if(!t)return;
+  RULES.push({id:uid(),text:t,req:$("rreq").checked});$("rtext").value="";saveR();renderRules();
+};
+$("rtext").onkeydown=e=>{if(e.key==="Enter")$("radd").click()};
+$("rules").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  const i=+b.dataset.i,r=RULES[i];if(!r)return;
+  if(b.dataset.a==="tog")r.req=!r.req;
+  else if(b.dataset.a==="edit"){const t=prompt("基準を書き直す",r.text);if(t&&t.trim())r.text=t.trim()}
+  else if(b.dataset.a==="del"){if(!confirm("この基準を削除しますか?(過去の記録は残ります)"))return;RULES.splice(i,1)}
+  saveR();renderRules();
+};
+
+function renderCheck(){
+  const box=$("chklist");
+  if(!RULES.length){box.innerHTML='<div class="sub">先に①で基準を追加してください。</div>';renderVerdict();return}
+  box.innerHTML=RULES.map(r=>`<label class="ck"><input type="checkbox" data-id="${r.id}" ${ticks[r.id]?"checked":""}><span>${esc(r.text)} <b class="tag ${r.req?"req":""}">${r.req?"必須":"任意"}</b></span></label>`).join("");
+  renderVerdict();
+}
+$("chklist").onchange=e=>{const id=e.target.dataset.id;if(id){ticks[id]=e.target.checked;renderVerdict()}};
+function renderVerdict(){
+  const v=$("verdict");
+  if(!RULES.length){v.innerHTML="";return}
+  const miss=RULES.filter(r=>r.req&&!ticks[r.id]);
+  v.innerHTML=miss.length?`<div class="warn">⚠ 必須の基準が${miss.length}件、満たされていません:<br>${miss.map(r=>"・"+esc(r.text)).join("<br>")}<br>このままエントリーすると、基準から外れた取引になります。</div>`:'<div class="good">✅ 必須の基準はすべて満たしています。</div>';
+}
+$("rec").onclick=()=>{
+  if(!RULES.length){alert("先に基準を追加してください。");return}
+  const miss=RULES.filter(r=>!ticks[r.id]).map(r=>({t:r.text,req:r.req}));
+  LOG.unshift({id:uid(),ts:Date.now(),pair:$("pair").value.trim()||"-",side:$("side").value,memo:$("memo").value.trim(),miss,ok:!miss.some(m=>m.req),n:RULES.length,pips:null});
+  saveL();ticks={};$("memo").value="";renderCheck();renderLog();
+};
+
+function renderLog(){
+  const n=LOG.length;
+  if(!n){$("sum").innerHTML='<div class="sub">まだ記録がありません。</div>';$("hist").innerHTML="";return}
+  const ok=LOG.filter(x=>x.ok),dev=LOG.filter(x=>!x.ok);
+  const grp=a=>{const p=a.filter(x=>x.pips!=null);if(!p.length)return "結果の入力なし";const sum=p.reduce((s,x)=>s+x.pips,0),w=p.filter(x=>x.pips>0).length;return `${p.length}件 / 勝率${(w/p.length*100).toFixed(0)}% / 合計${sum.toFixed(1)}pips`};
+  const cnt={};LOG.forEach(x=>x.miss.filter(m=>m.req).forEach(m=>cnt[m.t]=(cnt[m.t]||0)+1));
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  $("sum").innerHTML=`<div class="stats"><div><span class="sub">記録</span><b>${n}件</b></div><div><span class="sub">基準どおり率</span><b class="${ok.length===n?"up":""}">${(ok.length/n*100).toFixed(0)}%</b></div><div><span class="sub">逸脱</span><b class="${dev.length?"down":""}">${dev.length}件</b></div></div>
+  <div class="sub">基準どおり: ${grp(ok)}<br>逸脱した取引: ${grp(dev)}</div>
+  ${top.length?`<div class="sub" style="margin-top:6px">よく外す基準: ${top.map(t=>esc(t[0])+"("+t[1]+"回)").join("、")}</div>`:""}`;
+  $("hist").innerHTML=LOG.map((x,i)=>`<div class="hrow"><div><b class="${x.ok?"up":"down"}">${x.ok?"✅ 基準どおり":"⚠ 逸脱"}</b> ${esc(x.pair)} ${x.side}<div class="sub">${new Date(x.ts).toLocaleString("ja-JP")}${x.memo?" ・ "+esc(x.memo):""}</div>${x.miss.length?`<div class="sub">未チェック: ${x.miss.map(m=>esc(m.t)+(m.req?"(必須)":"")).join("、")}</div>`:""}</div><div><input class="pips" data-i="${i}" type="number" step="0.1" placeholder="結果pips" value="${x.pips==null?"":x.pips}"> <button class="ghost" data-i="${i}">削除</button></div></div>`).join("");
+}
+$("hist").onchange=e=>{const i=e.target.dataset.i;if(e.target.classList.contains("pips")&&LOG[i]){LOG[i].pips=e.target.value===""?null:+e.target.value;saveL();renderLog()}};
+$("hist").onclick=e=>{const b=e.target.closest("button");if(b&&confirm("この記録を削除しますか?")){LOG.splice(+b.dataset.i,1);saveL();renderLog()}};
+$("clear").onclick=()=>{if(LOG.length&&confirm("全ての記録を消します。よろしいですか?")){LOG=[];saveL();renderLog()}};
+renderRules();renderLog();
+
+/* ---------- ② 写真シェア(Supabase) ---------- */
+const CF=window.APP_CONFIG||{},U=CF.SUPABASE_URL,K=CF.SUPABASE_KEY;
+const H={apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"};
+const msg=t=>$("pmsg").textContent=t;
+const ls={get:k=>{try{return localStorage.getItem(k)||""}catch(e){return ""}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+$("nick").value=ls.get("nick");$("room").value=ls.get("room");
+async function shrink(f){
+  const bm=await createImageBitmap(f);let w=900,q=0.7;
+  for(let k=0;k<6;k++){
+    const sc=Math.min(1,w/Math.max(bm.width,bm.height)),c=document.createElement("canvas");
+    c.width=Math.round(bm.width*sc);c.height=Math.round(bm.height*sc);
+    c.getContext("2d").drawImage(bm,0,0,c.width,c.height);
+    const out=c.toDataURL("image/jpeg",q);
+    if(out.length<250000)return out;
+    w*=0.8;q=Math.max(0.4,q-0.08);
+  }
+  throw new Error("big");
+}
+async function load(){
+  const room=$("room").value.trim();
+  if(!U||!K){msg("共有機能は未設定です。README.mdの手順で設定してください。");return}
+  if(!room){msg("合言葉を入れると、同じ合言葉の友達の投稿が表示されます。");$("posts").innerHTML="";return}
+  try{
+    const r=await fetch(`${U}/rest/v1/posts?room=eq.${encodeURIComponent(room)}&order=ts.desc&limit=50`,{headers:H});
+    if(!r.ok)throw 0;
+    const docs=await r.json(),box=$("posts");box.innerHTML="";
+    if(!docs.length){box.innerHTML='<div class="sub">まだ投稿がありません。</div>';return}
+    docs.forEach(p=>{
+      const el=document.createElement("div");el.className="card post";
+      const h=document.createElement("strong");h.textContent=p.title||"(無題)";
+      const m=document.createElement("div");m.className="sub";
+      m.textContent=(p.nick||"名無し")+" ・ "+new Date(p.ts).toLocaleString("ja-JP");
+      el.append(h,m);
+      if(typeof p.img==="string"&&p.img.startsWith("data:image/")){const im=document.createElement("img");im.src=p.img;im.alt=p.title||"";el.append(im)}
+      box.append(el);
+    });
+    msg("");
+  }catch(e){msg("読み込めませんでした。通信と設定を確認してください。")}
+}
+$("post").onclick=async()=>{
+  const t=$("title").value.trim(),f=$("photo").files[0],room=$("room").value.trim(),nick=$("nick").value.trim()||"名無し";
+  if(!U||!K){msg("共有機能は未設定です。");return}
+  if(!room||!t||!f){msg("合言葉・題名・写真を入れてください。");return}
+  ls.set("nick",nick);ls.set("room",room);
+  $("post").disabled=true;msg("投稿中…");
+  try{
+    const img=await shrink(f);
+    const r=await fetch(`${U}/rest/v1/posts`,{method:"POST",headers:{...H,Prefer:"return=minimal"},body:JSON.stringify({room,nick,title:t,img,ts:Date.now()})});
+    if(!r.ok)throw 0;
+    $("title").value="";$("photo").value="";msg("投稿しました。");load();
+  }catch(e){msg("投稿できませんでした。")}
+  $("post").disabled=false;
+};
+$("room").onchange=()=>{ls.set("room",$("room").value.trim());load()};
+document.querySelector('[data-t="share"]').addEventListener("click",load);
+setInterval(()=>{if(!$("share").classList.contains("hide"))load()},15000);
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
